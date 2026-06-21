@@ -9,6 +9,7 @@ export interface Customer {
   email: string | null;
   battery_serial_number: string;
   battery_amount: number;
+  paid_amount: number;
   purchase_date: string;
   payment_status: "pending" | "paid" | "completed";
   is_deleted: boolean;

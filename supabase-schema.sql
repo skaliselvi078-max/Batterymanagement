@@ -9,6 +9,15 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- =============================================
+-- MIGRATION FOR EXISTING DATABASES:
+-- If you already have the table and want to upgrade it, run this SQL:
+--
+-- ALTER TABLE customers ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(10, 2) NOT NULL DEFAULT 0.00;
+-- ALTER TABLE customers DROP CONSTRAINT IF EXISTS customers_payment_status_check;
+-- ALTER TABLE customers ADD CONSTRAINT customers_payment_status_check CHECK (payment_status IN ('pending', 'completed'));
+-- =============================================
+
+-- =============================================
 -- Customers Table
 -- =============================================
 CREATE TABLE customers (
@@ -18,9 +27,10 @@ CREATE TABLE customers (
   email TEXT,
   battery_serial_number TEXT NOT NULL,
   battery_amount NUMERIC(10, 2) NOT NULL,
+  paid_amount NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
   purchase_date DATE NOT NULL DEFAULT CURRENT_DATE,
   payment_status TEXT NOT NULL DEFAULT 'pending'
-    CHECK (payment_status IN ('pending', 'paid', 'completed')),
+    CHECK (payment_status IN ('pending', 'completed')),
   is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

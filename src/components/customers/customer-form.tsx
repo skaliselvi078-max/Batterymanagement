@@ -44,6 +44,7 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
     email: customer?.email || "",
     battery_serial_number: customer?.battery_serial_number || "",
     battery_amount: customer?.battery_amount?.toString() || "",
+    paid_amount: customer?.paid_amount?.toString() || "",
     purchase_date: customer?.purchase_date || new Date().toISOString().split("T")[0],
     payment_status: customer?.payment_status || "pending",
   });
@@ -87,12 +88,18 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
 
     setIsLoading(true);
 
+    const batteryAmount = parseFloat(formData.battery_amount);
+    const paidAmount = formData.payment_status === "completed"
+      ? batteryAmount
+      : parseFloat(formData.paid_amount || "0");
+
     const payload = {
       customer_name: formData.customer_name.trim(),
       phone_number: formData.phone_number.trim(),
       email: formData.email.trim() || null,
       battery_serial_number: formData.battery_serial_number.trim(),
-      battery_amount: parseFloat(formData.battery_amount),
+      battery_amount: batteryAmount,
+      paid_amount: paidAmount,
       purchase_date: formData.purchase_date,
       payment_status: formData.payment_status,
     };
@@ -263,7 +270,12 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
             </Label>
             <Select
               value={formData.payment_status}
-              onValueChange={(value) => handleChange("payment_status", value ?? "pending")}
+              onValueChange={(value) => {
+                handleChange("payment_status", value ?? "pending");
+                if (value === "completed") {
+                  handleChange("paid_amount", "");
+                }
+              }}
               disabled={isLoading}
             >
               <SelectTrigger
@@ -281,12 +293,6 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
                     Pending
                   </span>
                 </SelectItem>
-                <SelectItem value="paid">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-green-500" />
-                    Paid
-                  </span>
-                </SelectItem>
                 <SelectItem value="completed">
                   <span className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-blue-500" />
@@ -301,6 +307,36 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
               </p>
             )}
           </div>
+
+          {/* Paid Amount (Conditional) */}
+          {formData.payment_status === "pending" && (
+            <div className="space-y-2 animate-slide-down">
+              <div className="floating-label-group">
+                <Input
+                  id="paid_amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder=" "
+                  value={formData.paid_amount}
+                  onChange={(e) => handleChange("paid_amount", e.target.value)}
+                  onFocus={handleFocus}
+                  className={`h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${
+                    errors.paid_amount ? "border-destructive" : "border-input"
+                  }`}
+                  disabled={isLoading}
+                />
+                <label htmlFor="paid_amount" className="floating-label">
+                  Paid Amount (₹) *
+                </label>
+              </div>
+              {errors.paid_amount && (
+                <p className="text-xs text-destructive animate-slide-down">
+                  {errors.paid_amount}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Battery Serial Number (full width) */}
@@ -346,8 +382,17 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
           )}
         </div>
 
-        {/* Submit */}
-        <div className="flex justify-end pt-2">
+        {/* Submit & Cancel */}
+        <div className="flex justify-end pt-2 gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="h-12 px-8 rounded-xl text-base font-semibold border-2"
+            onClick={() => router.push(mode === "create" ? "/customers" : `/customers/${customer?.id}`)}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
           <Button
             type="submit"
             className="h-12 px-8 rounded-xl text-base font-semibold gradient-primary hover:opacity-90 transition-opacity shadow-lg shadow-primary/25"

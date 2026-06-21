@@ -8,6 +8,7 @@ export function validateCustomerForm(data: {
   email: string;
   battery_serial_number: string;
   battery_amount: string;
+  paid_amount: string;
   purchase_date: string;
   payment_status: string;
 }): ValidationErrors {
@@ -38,10 +39,28 @@ export function validateCustomerForm(data: {
   }
 
   // Battery Amount
+  let totalAmountVal = 0;
   if (!data.battery_amount.trim()) {
     errors.battery_amount = "Battery amount is required";
-  } else if (isNaN(Number(data.battery_amount)) || Number(data.battery_amount) <= 0) {
-    errors.battery_amount = "Please enter a valid amount greater than 0";
+  } else {
+    totalAmountVal = Number(data.battery_amount);
+    if (isNaN(totalAmountVal) || totalAmountVal <= 0) {
+      errors.battery_amount = "Please enter a valid amount greater than 0";
+    }
+  }
+
+  // Paid Amount (only if status is pending)
+  if (data.payment_status === "pending") {
+    if (!data.paid_amount.trim()) {
+      errors.paid_amount = "Paid amount is required";
+    } else {
+      const paid = Number(data.paid_amount);
+      if (isNaN(paid) || paid < 0) {
+        errors.paid_amount = "Please enter a valid amount greater than or equal to 0";
+      } else if (data.battery_amount.trim() && !errors.battery_amount && paid >= totalAmountVal) {
+        errors.paid_amount = "Paid amount must be less than total amount (otherwise mark as Completed)";
+      }
+    }
   }
 
   // Purchase Date

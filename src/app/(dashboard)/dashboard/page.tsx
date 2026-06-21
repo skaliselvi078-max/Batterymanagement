@@ -11,7 +11,6 @@ import {
   Clock,
   CheckCircle2,
   IndianRupee,
-  CreditCard,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -38,9 +37,8 @@ export default function DashboardPage() {
       const pending = allCustomers.filter(
         (c) => c.payment_status === "pending"
       );
-      const paid = allCustomers.filter((c) => c.payment_status === "paid");
       const completed = allCustomers.filter(
-        (c) => c.payment_status === "completed"
+        (c) => c.payment_status === "completed" || c.payment_status === "paid"
       );
       const totalRevenue = allCustomers.reduce(
         (sum, c) => sum + Number(c.battery_amount),
@@ -51,7 +49,7 @@ export default function DashboardPage() {
         totalCustomers,
         totalPending: pending.length,
         pendingAmount: pending.reduce(
-          (sum, c) => sum + Number(c.battery_amount),
+          (sum, c) => sum + (Number(c.battery_amount) - Number(c.paid_amount || 0)),
           0
         ),
         totalCompleted: completed.length,
@@ -59,8 +57,8 @@ export default function DashboardPage() {
           (sum, c) => sum + Number(c.battery_amount),
           0
         ),
-        totalPaid: paid.length,
-        paidAmount: paid.reduce(
+        totalPaid: completed.length,
+        paidAmount: completed.reduce(
           (sum, c) => sum + Number(c.battery_amount),
           0
         ),
@@ -103,46 +101,28 @@ export default function DashboardPage() {
           delay={0}
         />
         <StatsCard
-          title="Pending Payments"
-          value={stats?.totalPending || 0}
-          icon={Clock}
-          gradient="gradient-danger"
+          title="Completed Payments"
+          value={stats?.completedAmount || 0}
+          icon={CheckCircle2}
+          isCurrency
+          gradient="gradient-success"
           delay={100}
         />
         <StatsCard
-          title="Completed Payments"
-          value={stats?.totalCompleted || 0}
-          icon={CheckCircle2}
-          gradient="gradient-info"
-          delay={200}
-        />
-        <StatsCard
-          title="Total Revenue"
-          value={stats?.totalRevenue || 0}
-          icon={IndianRupee}
-          isCurrency
-          gradient="gradient-success"
-          delay={300}
-        />
-      </div>
-
-      {/* Additional stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <StatsCard
-          title="Paid Amount"
-          value={stats?.paidAmount || 0}
-          icon={CreditCard}
-          isCurrency
-          gradient="gradient-success"
-          delay={400}
-        />
-        <StatsCard
-          title="Pending Amount"
+          title="Pending Payments"
           value={stats?.pendingAmount || 0}
           icon={Clock}
           isCurrency
-          gradient="gradient-warning"
-          delay={500}
+          gradient="gradient-danger"
+          delay={200}
+        />
+        <StatsCard
+          title="Total Expected Revenue"
+          value={stats?.totalRevenue || 0}
+          icon={IndianRupee}
+          isCurrency
+          gradient="gradient-info"
+          delay={300}
         />
       </div>
 
