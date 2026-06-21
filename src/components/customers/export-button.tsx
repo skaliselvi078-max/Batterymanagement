@@ -23,6 +23,7 @@ export function ExportButton() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [exportMode, setExportMode] = useState<"all" | "range">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "completed">("all");
   const [format, setFormat] = useState<"excel" | "csv">("excel");
 
   // Set defaults: start of current month and today's date
@@ -59,6 +60,10 @@ export function ExportButton() {
           .lte("purchase_date", endDate);
       }
 
+      if (statusFilter !== "all") {
+        query = query.eq("payment_status", statusFilter);
+      }
+
       // Order by purchase_date DESC for consistency
       query = query.order("purchase_date", { ascending: false });
 
@@ -67,17 +72,19 @@ export function ExportButton() {
 
       const customersData = data || [];
       if (customersData.length === 0) {
-        toast.info("No data found for the selected range");
+        toast.info("No data found for the selected filters");
         return;
       }
 
+      const statusSuffix = statusFilter !== "all" ? `-${statusFilter}` : "";
       const fileDate = exportMode === "range" ? `${startDate}_to_${endDate}` : todayStr;
+      const fileName = `battery-inventory${statusSuffix}-${fileDate}`;
 
       if (format === "csv") {
-        exportToCSV(customersData, `battery-inventory-${fileDate}`);
+        exportToCSV(customersData, fileName);
         toast.success("CSV exported successfully!");
       } else {
-        exportToExcel(customersData, `battery-inventory-${fileDate}`);
+        exportToExcel(customersData, fileName);
         toast.success("Excel file exported successfully!");
       }
       setOpen(false); // Close dialog on success
@@ -163,6 +170,46 @@ export function ExportButton() {
               </div>
             </div>
           )}
+
+          {/* Status Selection */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">Filter by Payment Status</Label>
+            <div className="grid grid-cols-3 gap-2 bg-muted/50 p-1 rounded-xl border">
+              <button
+                type="button"
+                onClick={() => setStatusFilter("all")}
+                className={`py-2 text-xs sm:text-sm font-medium rounded-lg transition-all ${
+                  statusFilter === "all"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter("pending")}
+                className={`py-2 text-xs sm:text-sm font-medium rounded-lg transition-all ${
+                  statusFilter === "pending"
+                    ? "bg-background text-destructive hover:text-destructive shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Pending
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter("completed")}
+                className={`py-2 text-xs sm:text-sm font-medium rounded-lg transition-all ${
+                  statusFilter === "completed"
+                    ? "bg-background text-primary hover:text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Completed
+              </button>
+            </div>
+          </div>
 
           {/* Format Selection */}
           <div className="space-y-2">
