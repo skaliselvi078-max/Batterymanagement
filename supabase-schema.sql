@@ -68,24 +68,25 @@ CREATE TRIGGER customers_updated_at
 -- =============================================
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 
--- All authenticated users can view non-deleted customers
-CREATE POLICY "Authenticated users can view customers"
+-- Set default user_id to the currently logged in user
+ALTER TABLE customers ALTER COLUMN user_id SET DEFAULT auth.uid();
+
+-- Create secure, per-user private policies
+CREATE POLICY "Users can view their own customers"
   ON customers FOR SELECT
   TO authenticated
-  USING (is_deleted = FALSE);
+  USING (auth.uid() = user_id AND is_deleted = FALSE);
 
--- All authenticated users can insert customers
-CREATE POLICY "Authenticated users can insert customers"
+CREATE POLICY "Users can insert their own customers"
   ON customers FOR INSERT
   TO authenticated
-  WITH CHECK (TRUE);
+  WITH CHECK (auth.uid() = user_id);
 
--- All authenticated users can update customers (including soft delete)
-CREATE POLICY "Authenticated users can update customers"
+CREATE POLICY "Users can update their own customers"
   ON customers FOR UPDATE
   TO authenticated
-  USING (TRUE)
-  WITH CHECK (TRUE);
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 -- =============================================
 -- Storage Bucket for Backups

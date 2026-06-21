@@ -93,18 +93,22 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
       ? batteryAmount
       : parseFloat(formData.paid_amount || "0");
 
-    const payload = {
-      customer_name: formData.customer_name.trim(),
-      phone_number: formData.phone_number.trim(),
-      email: formData.email.trim() || null,
-      battery_serial_number: formData.battery_serial_number.trim(),
-      battery_amount: batteryAmount,
-      paid_amount: paidAmount,
-      purchase_date: formData.purchase_date,
-      payment_status: formData.payment_status,
-    };
-
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id;
+
+      const payload = {
+        customer_name: formData.customer_name.trim(),
+        phone_number: formData.phone_number.trim(),
+        email: formData.email.trim() || null,
+        battery_serial_number: formData.battery_serial_number.trim(),
+        battery_amount: batteryAmount,
+        paid_amount: paidAmount,
+        purchase_date: formData.purchase_date,
+        payment_status: formData.payment_status,
+        user_id: userId,
+      };
+
       if (mode === "create") {
         const { error } = await supabase.from("customers").insert([payload]);
         if (error) throw error;
