@@ -56,10 +56,16 @@ export default function DashboardPage() {
         completedAmount: completed.reduce(
           (sum, c) => sum + Number(c.battery_amount),
           0
+        ) + pending.reduce(
+          (sum, c) => sum + Number(c.paid_amount || 0),
+          0
         ),
         totalPaid: completed.length,
         paidAmount: completed.reduce(
           (sum, c) => sum + Number(c.battery_amount),
+          0
+        ) + pending.reduce(
+          (sum, c) => sum + Number(c.paid_amount || 0),
           0
         ),
         totalRevenue,

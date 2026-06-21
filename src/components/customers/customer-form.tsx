@@ -383,11 +383,11 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
         </div>
 
         {/* Submit & Cancel */}
-        <div className="flex justify-end pt-2 gap-3">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end pt-2 gap-3">
           <Button
             type="button"
             variant="outline"
-            className="h-12 px-8 rounded-xl text-base font-semibold border-2"
+            className="h-12 w-full sm:w-auto px-8 rounded-xl text-base font-semibold border-2"
             onClick={() => router.push(mode === "create" ? "/customers" : `/customers/${customer?.id}`)}
             disabled={isLoading}
           >
@@ -395,16 +395,16 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
           </Button>
           <Button
             type="submit"
-            className="h-12 px-8 rounded-xl text-base font-semibold gradient-primary hover:opacity-90 transition-opacity shadow-lg shadow-primary/25"
+            className="h-12 w-full sm:w-auto px-8 rounded-xl text-base font-semibold gradient-primary hover:opacity-90 transition-opacity shadow-lg shadow-primary/25"
             disabled={isLoading}
           >
             {isLoading ? (
-              <span className="flex items-center gap-2">
+              <span className="flex items-center justify-center gap-2 w-full">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 {mode === "create" ? "Adding..." : "Saving..."}
               </span>
             ) : (
-              <span className="flex items-center gap-2">
+              <span className="flex items-center justify-center gap-2 w-full">
                 <Save className="h-5 w-5" />
                 {mode === "create" ? "Add Customer" : "Save Changes"}
               </span>

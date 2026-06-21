@@ -115,18 +115,22 @@ export default function CustomerDetailsPage() {
       value: formatCurrency(customer.battery_amount),
       gradient: "gradient-success",
     },
-    {
-      icon: IndianRupee,
-      label: "Paid Amount",
-      value: formatCurrency(customer.paid_amount || 0),
-      gradient: "gradient-info",
-    },
-    {
-      icon: IndianRupee,
-      label: "Remaining Balance",
-      value: formatCurrency(customer.battery_amount - (customer.paid_amount || 0)),
-      gradient: "gradient-danger",
-    },
+    ...(customer.payment_status === "pending"
+      ? [
+          {
+            icon: IndianRupee,
+            label: "Paid Amount",
+            value: formatCurrency(customer.paid_amount || 0),
+            gradient: "gradient-info",
+          },
+          {
+            icon: IndianRupee,
+            label: "Remaining Balance",
+            value: formatCurrency(customer.battery_amount - (customer.paid_amount || 0)),
+            gradient: "gradient-danger",
+          },
+        ]
+      : []),
     {
       icon: Calendar,
       label: "Purchase Date",

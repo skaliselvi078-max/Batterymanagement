@@ -36,6 +36,7 @@ export default function CustomersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [sortAsc, setSortAsc] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -52,6 +53,11 @@ export default function CustomersPage() {
         query = query.or(
           `customer_name.ilike.%${debouncedSearch}%,phone_number.ilike.%${debouncedSearch}%,battery_serial_number.ilike.%${debouncedSearch}%`
         );
+      }
+
+      // Status filter
+      if (statusFilter !== "all") {
+        query = query.eq("payment_status", statusFilter);
       }
 
       // Sort
@@ -72,16 +78,16 @@ export default function CustomersPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, debouncedSearch, currentPage, pageSize, sortAsc]);
+  }, [supabase, debouncedSearch, currentPage, pageSize, sortAsc, statusFilter]);
 
   useEffect(() => {
     fetchCustomers();
   }, [fetchCustomers]);
 
-  // Reset to page 1 when search changes
+  // Reset to page 1 when search or status filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, statusFilter]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -119,7 +125,42 @@ export default function CustomersPage() {
               className="pl-10 h-11 rounded-xl border-2 bg-background"
             />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-xl border-2 border-border shrink-0">
+              <button
+                type="button"
+                onClick={() => setStatusFilter("all")}
+                className={`px-3 sm:px-4 h-9 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+                  statusFilter === "all"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter("pending")}
+                className={`px-3 sm:px-4 h-9 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+                  statusFilter === "pending"
+                    ? "bg-background text-destructive hover:text-destructive shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Pending
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter("completed")}
+                className={`px-3 sm:px-4 h-9 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+                  statusFilter === "completed"
+                    ? "bg-background text-primary hover:text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Completed
+              </button>
+            </div>
             <Button
               variant="outline"
               size="sm"
