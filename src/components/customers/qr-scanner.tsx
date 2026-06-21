@@ -26,6 +26,22 @@ export function QRScannerDialog({
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const handleClose = async () => {
+    setIsStarting(false);
+    if (html5QrCodeRef.current) {
+      const scannerInstance = html5QrCodeRef.current;
+      html5QrCodeRef.current = null;
+      try {
+        if (scannerInstance.isScanning) {
+          await scannerInstance.stop();
+        }
+      } catch (err) {
+        console.error("Error stopping scanner on close:", err);
+      }
+    }
+    onOpenChange(false);
+  };
+
   useEffect(() => {
     if (!open) return;
 
@@ -49,9 +65,19 @@ export function QRScannerDialog({
             qrbox: { width: 250, height: 250 },
             aspectRatio: 1,
           },
-          (decodedText) => {
+          async (decodedText) => {
+            if (html5QrCodeRef.current) {
+              const scannerInstance = html5QrCodeRef.current;
+              html5QrCodeRef.current = null;
+              try {
+                if (scannerInstance.isScanning) {
+                  await scannerInstance.stop();
+                }
+              } catch (err) {
+                console.error("Error stopping scanner on scan:", err);
+              }
+            }
             onScan(decodedText);
-            scanner.stop().catch(() => {});
             onOpenChange(false);
           },
           () => {
@@ -77,18 +103,21 @@ export function QRScannerDialog({
       mounted = false;
       clearTimeout(timer);
       if (html5QrCodeRef.current) {
-        html5QrCodeRef.current
-          .stop()
-          .catch(() => {})
-          .finally(() => {
-            html5QrCodeRef.current = null;
-          });
+        const scannerInstance = html5QrCodeRef.current;
+        html5QrCodeRef.current = null;
+        try {
+          if (scannerInstance.isScanning) {
+            scannerInstance.stop().catch(() => {});
+          }
+        } catch {
+          // Ignore
+        }
       }
     };
   }, [open, onScan, onOpenChange]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
       <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -127,7 +156,7 @@ export function QRScannerDialog({
           <Button
             variant="outline"
             className="w-full rounded-xl"
-            onClick={() => onOpenChange(false)}
+            onClick={handleClose}
           >
             Cancel
           </Button>
