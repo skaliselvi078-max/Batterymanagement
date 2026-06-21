@@ -7,8 +7,8 @@ export async function updateSession(request: NextRequest) {
   });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder-project.supabase.co",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key",
     {
       cookies: {
         getAll() {
@@ -41,7 +41,6 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/customers") ||
     request.nextUrl.pathname.startsWith("/backups") ||
     request.nextUrl.pathname.startsWith("/settings");
-  const isApiRoute = request.nextUrl.pathname.startsWith("/api");
 
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
