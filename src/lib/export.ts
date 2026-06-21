@@ -10,21 +10,32 @@ export function exportToCSV(data: Customer[], filename: string): void {
     "Email",
     "Battery Serial Number",
     "Battery Amount",
+    "Paid Amount",
+    "Remaining Balance",
     "Purchase Date",
     "Payment Status",
     "Created At",
   ];
 
-  const rows = data.map((customer) => [
-    customer.customer_name,
-    customer.phone_number,
-    customer.email || "",
-    customer.battery_serial_number,
-    customer.battery_amount.toString(),
-    customer.purchase_date,
-    customer.payment_status,
-    customer.created_at,
-  ]);
+  const rows = data.map((customer) => {
+    const paidAmount = customer.payment_status === "completed"
+      ? customer.battery_amount
+      : (customer.paid_amount || 0);
+    const remainingBalance = customer.battery_amount - paidAmount;
+
+    return [
+      customer.customer_name,
+      customer.phone_number,
+      customer.email || "",
+      customer.battery_serial_number,
+      customer.battery_amount.toString(),
+      paidAmount.toString(),
+      remainingBalance.toString(),
+      customer.purchase_date,
+      customer.payment_status,
+      customer.created_at,
+    ];
+  });
 
   const csvContent = [
     headers.join(","),
@@ -40,16 +51,25 @@ export function exportToCSV(data: Customer[], filename: string): void {
 export function exportToExcel(data: Customer[], filename: string): void {
   if (data.length === 0) return;
 
-  const worksheetData = data.map((customer) => ({
-    "Customer Name": customer.customer_name,
-    "Phone Number": customer.phone_number,
-    Email: customer.email || "",
-    "Battery Serial Number": customer.battery_serial_number,
-    "Battery Amount": customer.battery_amount,
-    "Purchase Date": customer.purchase_date,
-    "Payment Status": customer.payment_status,
-    "Created At": customer.created_at,
-  }));
+  const worksheetData = data.map((customer) => {
+    const paidAmount = customer.payment_status === "completed"
+      ? customer.battery_amount
+      : (customer.paid_amount || 0);
+    const remainingBalance = customer.battery_amount - paidAmount;
+
+    return {
+      "Customer Name": customer.customer_name,
+      "Phone Number": customer.phone_number,
+      Email: customer.email || "",
+      "Battery Serial Number": customer.battery_serial_number,
+      "Battery Amount": customer.battery_amount,
+      "Paid Amount": paidAmount,
+      "Remaining Balance": remainingBalance,
+      "Purchase Date": customer.purchase_date,
+      "Payment Status": customer.payment_status,
+      "Created At": customer.created_at,
+    };
+  });
 
   const worksheet = XLSX.utils.json_to_sheet(worksheetData);
   const workbook = XLSX.utils.book_new();
@@ -93,6 +113,7 @@ export function generateCSVString(data: Customer[]): string {
     "email",
     "battery_serial_number",
     "battery_amount",
+    "paid_amount",
     "purchase_date",
     "payment_status",
     "is_deleted",
@@ -107,6 +128,7 @@ export function generateCSVString(data: Customer[]): string {
     customer.email || "",
     customer.battery_serial_number,
     customer.battery_amount.toString(),
+    (customer.paid_amount || 0).toString(),
     customer.purchase_date,
     customer.payment_status,
     customer.is_deleted.toString(),
