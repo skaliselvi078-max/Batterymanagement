@@ -49,11 +49,11 @@ export default function CustomersPage() {
         .select("*", { count: "exact" })
         .eq("is_deleted", false);
 
-      // Optimize search: use single-field queries instead of complex OR patterns
+      // Search across all relevant fields
       if (debouncedSearch) {
-        // Search only on primary field (customer_name) for faster query
-        // Fall back to other fields if no results
-        query = query.ilike("customer_name", `%${debouncedSearch}%`);
+        query = query.or(
+          `customer_name.ilike.%${debouncedSearch}%,phone_number.ilike.%${debouncedSearch}%,battery_serial_number.ilike.%${debouncedSearch}%,vehicle_number.ilike.%${debouncedSearch}%,ups_name.ilike.%${debouncedSearch}%`
+        );
       }
 
       // Status filter

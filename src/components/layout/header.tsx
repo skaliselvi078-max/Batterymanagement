@@ -1,14 +1,23 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "./theme-toggle";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { MobileNav } from "./mobile-nav";
 
-interface HeaderProps {
-  userEmail?: string;
-}
+export function Header() {
+  const [userEmail, setUserEmail] = useState<string | undefined>();
 
-export function Header({ userEmail }: HeaderProps) {
+  useEffect(() => {
+    const supabase = createClient();
+    if (supabase) {
+      supabase.auth.getUser().then((res: any) => {
+        setUserEmail(res?.data?.user?.email ?? undefined);
+      }).catch(() => {});
+    }
+  }, []);
+
   return (
     <header className="sticky top-0 z-40 h-16 border-b border-border glass">
       <div className="flex items-center justify-between h-full px-4 md:px-6">
@@ -40,3 +49,4 @@ export function Header({ userEmail }: HeaderProps) {
     </header>
   );
 }
+
