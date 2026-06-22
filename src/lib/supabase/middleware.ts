@@ -1,6 +1,23 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// In-memory cache for session verification (expires after 60 seconds)
+const sessionCache = new Map<string, { user: any; timestamp: number }>();
+const CACHE_DURATION_MS = 60000; // 60 seconds
+
+function getCachedSession(sessionId: string) {
+  const cached = sessionCache.get(sessionId);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION_MS) {
+    return cached.user;
+  }
+  sessionCache.delete(sessionId);
+  return null;
+}
+
+function setCachedSession(sessionId: string, user: any) {
+  sessionCache.set(sessionId, { user, timestamp: Date.now() });
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -39,10 +56,19 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh the session - IMPORTANT
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Optimize: Check cache first before calling Supabase auth
+  const sessionCookie = request.cookies.get("sb-auth-token");
+  const cacheKey = sessionCookie?.value || "anonymous";
+  let user: any = getCachedSession(cacheKey);
+
+  // Only call getUser() if not in cache
+  if (user === null) {
+    const { data: { user: fetchedUser } } = await supabase.auth.getUser();
+    user = fetchedUser;
+    if (user) {
+      setCachedSession(cacheKey, user);
+    }
+  }
 
   // Protected routes - redirect to login if not authenticated
   const isAuthRoute = request.nextUrl.pathname.startsWith("/login");

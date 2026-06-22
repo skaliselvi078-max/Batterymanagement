@@ -33,8 +33,8 @@ export function StatsCard({
   useEffect(() => {
     if (!isVisible) return;
 
-    const duration = 1200;
-    const steps = 40;
+    const duration = 800; // Reduced from 1200ms to 800ms
+    const steps = 15; // Reduced from 40 to 15 (fewer re-renders)
     const increment = value / steps;
     let current = 0;
     let step = 0;

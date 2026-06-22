@@ -39,7 +39,7 @@ export function MobileNav() {
         <Menu className="h-5 w-5" />
         <span className="sr-only">Toggle menu</span>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[280px] p-0">
+      <SheetContent side="left" className="w-[min(80vw,280px)] p-0 sm:w-[280px]">
         <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 h-16 border-b border-border">

@@ -54,7 +54,7 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "hidden lg:flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-in-out relative",
+        "hidden lg:flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-200 ease-out relative will-change-[width]",
         collapsed ? "w-[70px]" : "w-[260px]",
         className
       )}

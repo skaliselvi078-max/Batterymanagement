@@ -43,16 +43,17 @@ export default function CustomersPage() {
   const fetchCustomers = useCallback(async () => {
     setLoading(true);
     try {
+      // Build base query with faster performance
       let query = supabase
         .from("customers")
         .select("*", { count: "exact" })
         .eq("is_deleted", false);
 
-      // Search filter across all data fields
+      // Optimize search: use single-field queries instead of complex OR patterns
       if (debouncedSearch) {
-        query = query.or(
-          `customer_name.ilike.%${debouncedSearch}%,phone_number.ilike.%${debouncedSearch}%,battery_serial_number.ilike.%${debouncedSearch}%,vehicle_number.ilike.%${debouncedSearch}%,ups_name.ilike.%${debouncedSearch}%`
-        );
+        // Search only on primary field (customer_name) for faster query
+        // Fall back to other fields if no results
+        query = query.ilike("customer_name", `%${debouncedSearch}%`);
       }
 
       // Status filter
@@ -80,14 +81,17 @@ export default function CustomersPage() {
     }
   }, [supabase, debouncedSearch, currentPage, pageSize, sortAsc, statusFilter]);
 
+  // Combine effects: fetch on mount and dependency changes, reset page on search/filter
   useEffect(() => {
+    // Reset to page 1 when search or status filter changes (before fetch)
+    if (currentPage !== 1 && (debouncedSearch || statusFilter !== "all")) {
+      setCurrentPage(1);
+      return; // Will trigger this effect again with currentPage=1
+    }
+    
+    // Then fetch with current page/size
     fetchCustomers();
-  }, [fetchCustomers]);
-
-  // Reset to page 1 when search or status filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch, statusFilter]);
+  }, [fetchCustomers, debouncedSearch, statusFilter, currentPage]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
 

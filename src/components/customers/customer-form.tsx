@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Customer } from "@/lib/types";
 import { validateCustomerForm, ValidationErrors } from "@/lib/validators";
+import { usePreloadComponent } from "@/hooks/use-preload-component";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +34,9 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
   const router = useRouter();
   const supabase = createClient();
   const formRef = useRef<HTMLFormElement>(null);
+
+  // Preload QR scanner component on component mount
+  usePreloadComponent(() => import("./qr-scanner"), true);
 
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<ValidationErrors>({});
