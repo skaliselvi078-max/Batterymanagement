@@ -38,16 +38,35 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [scannerOpen, setScannerOpen] = useState(false);
 
+  // Find initial identity type based on existing customer details
+  const getInitialIdentityType = () => {
+    if (customer?.vehicle_number) return "vehicle";
+    if (customer?.ups_name) return "ups";
+    return "none";
+  };
+
+  const [identityType, setIdentityType] = useState<"none" | "vehicle" | "ups">(getInitialIdentityType());
+
   const [formData, setFormData] = useState({
     customer_name: customer?.customer_name || "",
     phone_number: customer?.phone_number || "",
-    email: customer?.email || "",
     battery_serial_number: customer?.battery_serial_number || "",
     battery_amount: customer?.battery_amount?.toString() || "",
     paid_amount: customer?.paid_amount?.toString() || "",
     purchase_date: customer?.purchase_date || new Date().toISOString().split("T")[0],
     payment_status: customer?.payment_status || "pending",
+    vehicle_number: customer?.vehicle_number || "",
+    ups_name: customer?.ups_name || "",
   });
+
+  const handleIdentityTypeChange = (value: "none" | "vehicle" | "ups") => {
+    setIdentityType(value);
+    setFormData((prev) => ({
+      ...prev,
+      vehicle_number: value === "vehicle" ? prev.vehicle_number : "",
+      ups_name: value === "ups" ? prev.ups_name : "",
+    }));
+  };
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -61,10 +80,8 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    // Ensure the focused field is visible (not hidden by keyboard on mobile)
-    setTimeout(() => {
-      e.target.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 300);
+    // Run instantly in milliseconds (no smooth scroll transition delay)
+    e.target.scrollIntoView({ behavior: "auto", block: "nearest" });
   };
 
   const handleScanResult = (result: string) => {
@@ -88,25 +105,26 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
 
     setIsLoading(true);
 
-    const batteryAmount = parseFloat(formData.battery_amount);
+    const batteryAmount = formData.battery_amount.trim() ? parseFloat(formData.battery_amount) : null;
     const paidAmount = formData.payment_status === "completed"
-      ? batteryAmount
-      : parseFloat(formData.paid_amount || "0");
+      ? (batteryAmount || 0)
+      : (formData.paid_amount.trim() ? parseFloat(formData.paid_amount) : 0);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const userId = user?.id;
 
       const payload = {
-        customer_name: formData.customer_name.trim(),
-        phone_number: formData.phone_number.trim(),
-        email: formData.email.trim() || null,
-        battery_serial_number: formData.battery_serial_number.trim(),
+        customer_name: formData.customer_name.trim() || null,
+        phone_number: formData.phone_number.trim() || null,
+        battery_serial_number: formData.battery_serial_number.trim() || null,
         battery_amount: batteryAmount,
         paid_amount: paidAmount,
-        purchase_date: formData.purchase_date,
+        purchase_date: formData.purchase_date || new Date().toISOString().split("T")[0],
         payment_status: formData.payment_status,
         user_id: userId,
+        vehicle_number: identityType === "vehicle" ? (formData.vehicle_number.trim() || null) : null,
+        ups_name: identityType === "ups" ? (formData.ups_name.trim() || null) : null,
       };
 
       if (mode === "create") {
@@ -154,7 +172,7 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
                 disabled={isLoading}
               />
               <label htmlFor="customer_name" className="floating-label">
-                Customer Name *
+                Customer Name
               </label>
             </div>
             {errors.customer_name && (
@@ -180,7 +198,7 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
                 disabled={isLoading}
               />
               <label htmlFor="phone_number" className="floating-label">
-                Phone Number *
+                Phone Number
               </label>
             </div>
             {errors.phone_number && (
@@ -190,36 +208,74 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
             )}
           </div>
 
-          {/* Email */}
+          {/* Info Selection Selector (Vehicle Number / UPS Name) */}
           <div className="space-y-2">
-            <div className="floating-label-group">
-              <Input
-                id="email"
-                type="email"
-                placeholder=" "
-                value={formData.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-                onFocus={handleFocus}
-                className={`h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${
-                  errors.email ? "border-destructive" : "border-input"
-                }`}
-                disabled={isLoading}
-              />
-              <label htmlFor="email" className="floating-label">
-                Email Address
-              </label>
-            </div>
-            {errors.email && (
-              <p className="text-xs text-destructive animate-slide-down">
-                {errors.email}
-              </p>
-            )}
+            <Label htmlFor="identity_type" className="text-sm font-medium">
+              Additional Info (Optional)
+            </Label>
+            <Select
+              value={identityType}
+              onValueChange={(val) => handleIdentityTypeChange(val as "none" | "vehicle" | "ups")}
+              disabled={isLoading}
+            >
+              <SelectTrigger
+                id="identity_type"
+                className="h-14 rounded-xl bg-background border-2 text-base border-input transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+              >
+                <SelectValue placeholder="Select Option" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="vehicle">Vehicle Number</SelectItem>
+                <SelectItem value="ups">UPS Name</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {/* Conditional Field (Vehicle Number) */}
+          {identityType === "vehicle" && (
+            <div className="space-y-2 animate-slide-down">
+              <div className="floating-label-group">
+                <Input
+                  id="vehicle_number"
+                  placeholder=" "
+                  value={formData.vehicle_number}
+                  onChange={(e) => handleChange("vehicle_number", e.target.value)}
+                  onFocus={handleFocus}
+                  className="h-14 rounded-xl bg-background border-2 text-base border-input transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  disabled={isLoading}
+                />
+                <label htmlFor="vehicle_number" className="floating-label">
+                  Vehicle Number
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* Conditional Field (UPS Name) */}
+          {identityType === "ups" && (
+            <div className="space-y-2 animate-slide-down">
+              <div className="floating-label-group">
+                <Input
+                  id="ups_name"
+                  placeholder=" "
+                  value={formData.ups_name}
+                  onChange={(e) => handleChange("ups_name", e.target.value)}
+                  onFocus={handleFocus}
+                  className="h-14 rounded-xl bg-background border-2 text-base border-input transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  disabled={isLoading}
+                />
+                <label htmlFor="ups_name" className="floating-label">
+                  UPS Name
+                </label>
+              </div>
+            </div>
+          )}
 
           {/* Purchase Date */}
           <div className="space-y-2">
             <Label htmlFor="purchase_date" className="text-sm font-medium">
-              Purchase Date *
+              Purchase Date
             </Label>
             <Input
               id="purchase_date"
@@ -257,7 +313,7 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
                 disabled={isLoading}
               />
               <label htmlFor="battery_amount" className="floating-label">
-                Battery Amount (₹) *
+                Battery Amount (₹)
               </label>
             </div>
             {errors.battery_amount && (
@@ -270,7 +326,7 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
           {/* Payment Status */}
           <div className="space-y-2">
             <Label htmlFor="payment_status" className="text-sm font-medium">
-              Payment Status *
+              Payment Status
             </Label>
             <Select
               value={formData.payment_status}
@@ -331,7 +387,7 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
                   disabled={isLoading}
                 />
                 <label htmlFor="paid_amount" className="floating-label">
-                  Paid Amount (₹) *
+                  Paid Amount (₹)
                 </label>
               </div>
               {errors.paid_amount && (
@@ -346,7 +402,7 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
         {/* Battery Serial Number (full width) */}
         <div className="space-y-2">
           <Label htmlFor="battery_serial_number" className="text-sm font-medium">
-            Battery Serial Number *
+            Battery Serial Number
           </Label>
           <div className="flex gap-3">
             <div className="flex-1 floating-label-group">

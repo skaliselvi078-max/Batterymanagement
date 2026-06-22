@@ -9,7 +9,6 @@ import {
   UserPlus,
   Database,
   Settings,
-  Battery,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -62,8 +61,8 @@ export function Sidebar({ className }: SidebarProps) {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
-        <div className="flex items-center justify-center h-9 w-9 rounded-xl gradient-primary shrink-0">
-          <Battery className="h-5 w-5 text-white" />
+        <div className="flex items-center justify-center h-9 w-9 shrink-0">
+          <img src="/logo.png" alt="Battery Inventory Logo" className="h-8 w-8 object-contain" />
         </div>
         {!collapsed && (
           <div className="overflow-hidden animate-fade-in">

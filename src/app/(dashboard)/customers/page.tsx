@@ -48,10 +48,10 @@ export default function CustomersPage() {
         .select("*", { count: "exact" })
         .eq("is_deleted", false);
 
-      // Search filter
+      // Search filter across all data fields
       if (debouncedSearch) {
         query = query.or(
-          `customer_name.ilike.%${debouncedSearch}%,phone_number.ilike.%${debouncedSearch}%,battery_serial_number.ilike.%${debouncedSearch}%`
+          `customer_name.ilike.%${debouncedSearch}%,phone_number.ilike.%${debouncedSearch}%,battery_serial_number.ilike.%${debouncedSearch}%,vehicle_number.ilike.%${debouncedSearch}%,ups_name.ilike.%${debouncedSearch}%`
         );
       }
 
@@ -119,7 +119,7 @@ export default function CustomersPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, phone, or serial number..."
+              placeholder="Search by name, phone, serial number, vehicle, or UPS..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 h-11 rounded-xl border-2 bg-background"
@@ -264,10 +264,31 @@ export default function CustomersPage() {
                       {customer.phone_number}
                     </td>
                     <td className="px-5 py-3 text-sm text-muted-foreground font-mono">
-                      {customer.battery_serial_number}
+                      <div>{customer.battery_serial_number || "—"}</div>
+                      {customer.vehicle_number && (
+                        <div className="text-[10px] text-muted-foreground font-sans mt-0.5 flex items-center gap-1">
+                          <span>🚗</span> {customer.vehicle_number}
+                        </div>
+                      )}
+                      {customer.ups_name && (
+                        <div className="text-[10px] text-muted-foreground font-sans mt-0.5 flex items-center gap-1">
+                          <span>🔌</span> {customer.ups_name}
+                        </div>
+                      )}
                     </td>
                     <td className="px-5 py-3 text-sm font-medium">
-                      {formatCurrency(customer.battery_amount)}
+                      {customer.payment_status === "pending" ? (
+                        <div className="flex flex-col">
+                          <span className="text-destructive font-semibold">
+                            {formatCurrency((customer.battery_amount || 0) - (customer.paid_amount || 0))}
+                          </span>
+                          <span className="text-[10px] text-destructive/80 font-medium uppercase tracking-wider">
+                            Balance
+                          </span>
+                        </div>
+                      ) : (
+                        customer.battery_amount !== null ? formatCurrency(customer.battery_amount) : "—"
+                      )}
                     </td>
                     <td className="px-5 py-3 text-sm text-muted-foreground">
                       {formatDate(customer.purchase_date)}
@@ -308,16 +329,28 @@ export default function CustomersPage() {
                   <StatusBadge status={customer.payment_status} />
                 </div>
                 <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
-                  <span>📞 {customer.phone_number}</span>
-                  <span className="text-right font-medium text-foreground">
-                    {formatCurrency(customer.battery_amount)}
-                  </span>
+                  <span>📞 {customer.phone_number || "—"}</span>
+                  {customer.payment_status === "pending" ? (
+                    <span className="text-right font-semibold text-destructive">
+                      {formatCurrency((customer.battery_amount || 0) - (customer.paid_amount || 0))} (Bal)
+                    </span>
+                  ) : (
+                    <span className="text-right font-medium text-foreground">
+                      {customer.battery_amount !== null ? formatCurrency(customer.battery_amount) : "—"}
+                    </span>
+                  )}
                   <span className="font-mono">
-                    🔋 {customer.battery_serial_number}
+                    🔋 {customer.battery_serial_number || "—"}
                   </span>
                   <span className="text-right">
                     {formatDate(customer.purchase_date)}
                   </span>
+                  {(customer.vehicle_number || customer.ups_name) && (
+                    <span className="col-span-2 text-[10px] border-t border-border/50 pt-1.5 mt-1 text-muted-foreground flex items-center gap-2">
+                      {customer.vehicle_number && <span>🚗 {customer.vehicle_number}</span>}
+                      {customer.ups_name && <span>🔌 {customer.ups_name}</span>}
+                    </span>
+                  )}
                 </div>
               </Link>
             ))}

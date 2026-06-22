@@ -4,18 +4,20 @@
 
 export interface Customer {
   id: string;
-  customer_name: string;
-  phone_number: string;
+  customer_name: string | null;
+  phone_number: string | null;
   email: string | null;
-  battery_serial_number: string;
-  battery_amount: number;
-  paid_amount: number;
+  battery_serial_number: string | null;
+  battery_amount: number | null;
+  paid_amount: number | null;
   purchase_date: string;
   payment_status: "pending" | "paid" | "completed";
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
   user_id: string | null;
+  vehicle_number: string | null;
+  ups_name: string | null;
 }
 
 export type CustomerInsert = Omit<

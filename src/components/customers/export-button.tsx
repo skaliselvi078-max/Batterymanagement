@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { exportToCSV, exportToExcel } from "@/lib/export";
+import { exportToExcel } from "@/lib/export";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,16 +15,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Download, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
+import { Download, Loader2, Cloud } from "lucide-react";
 import { toast } from "sonner";
 
 export function ExportButton() {
   const supabase = createClient();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [driveLoading, setDriveLoading] = useState(false);
   const [exportMode, setExportMode] = useState<"all" | "range">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "completed">("all");
-  const [format, setFormat] = useState<"excel" | "csv">("excel");
+  const format = "excel";
 
   // Set defaults: start of current month and today's date
   const todayStr = new Date().toISOString().split("T")[0];
@@ -36,7 +37,7 @@ export function ExportButton() {
   const [startDate, setStartDate] = useState(firstDayOfMonthStr);
   const [endDate, setEndDate] = useState(todayStr);
 
-  const handleExport = async () => {
+  const handleDownload = async () => {
     setLoading(true);
     try {
       let query = supabase
@@ -80,19 +81,60 @@ export function ExportButton() {
       const fileDate = exportMode === "range" ? `${startDate}_to_${endDate}` : todayStr;
       const fileName = `battery-inventory${statusSuffix}-${fileDate}`;
 
-      if (format === "csv") {
-        exportToCSV(customersData, fileName);
-        toast.success("CSV exported successfully!");
-      } else {
-        exportToExcel(customersData, fileName);
-        toast.success("Excel file exported successfully!");
-      }
+      exportToExcel(customersData, fileName);
+      toast.success("Excel file exported successfully!");
       setOpen(false); // Close dialog on success
     } catch (error: any) {
       console.error("Export error:", error);
       toast.error(error.message || "Failed to export data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUploadToDrive = async () => {
+    setDriveLoading(true);
+    try {
+      if (exportMode === "range") {
+        if (!startDate || !endDate) {
+          toast.error("Please select both start and end dates");
+          setDriveLoading(false);
+          return;
+        }
+        if (startDate > endDate) {
+          toast.error("Start date cannot be after end date");
+          setDriveLoading(false);
+          return;
+        }
+      }
+
+      const response = await fetch("/api/export/drive", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          exportMode,
+          startDate: exportMode === "range" ? startDate : null,
+          endDate: exportMode === "range" ? endDate : null,
+          statusFilter,
+          format,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to upload to Google Drive");
+      }
+
+      toast.success(`Successfully uploaded "${result.fileName}" to Google Drive!`);
+      setOpen(false);
+    } catch (error: any) {
+      console.error("Google Drive upload error:", error);
+      toast.error(error.message || "Failed to upload to Google Drive");
+    } finally {
+      setDriveLoading(false);
     }
   };
 
@@ -107,7 +149,7 @@ export function ExportButton() {
         <Download className="h-4 w-4 mr-2" />
         Export
       </DialogTrigger>
-      <DialogContent className="rounded-2xl max-w-md w-[95%]">
+      <DialogContent className="rounded-2xl sm:max-w-xl w-[95%]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Export Customers Data</DialogTitle>
           <DialogDescription>
@@ -211,65 +253,55 @@ export function ExportButton() {
             </div>
           </div>
 
-          {/* Format Selection */}
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">Select Format</Label>
-            <div className="grid grid-cols-2 gap-2 bg-muted/50 p-1 rounded-xl border">
-              <button
-                type="button"
-                onClick={() => setFormat("excel")}
-                className={`flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${
-                  format === "excel"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <FileSpreadsheet className="h-4 w-4 text-green-500" />
-                Excel (.xlsx)
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormat("csv")}
-                className={`flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${
-                  format === "csv"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <FileText className="h-4 w-4 text-blue-500" />
-                CSV (.csv)
-              </button>
-            </div>
-          </div>
         </div>
 
-        <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 mt-4">
+        <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 mt-4 sm:justify-between w-full">
           <Button
             type="button"
             variant="outline"
             onClick={() => setOpen(false)}
-            disabled={loading}
-            className="rounded-xl h-11"
+            disabled={loading || driveLoading}
+            className="rounded-xl h-11 sm:w-auto w-full"
           >
             Cancel
           </Button>
-          <Button
-            onClick={handleExport}
-            disabled={loading}
-            className="rounded-xl h-11 gradient-primary hover:opacity-90 transition-all font-semibold"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Exporting...
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4 mr-2" />
-                Export Data
-              </>
-            )}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button
+              onClick={handleDownload}
+              disabled={loading || driveLoading}
+              variant="secondary"
+              className="rounded-xl h-11 font-semibold w-full sm:w-auto"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Downloading...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download to Device
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleUploadToDrive}
+              disabled={loading || driveLoading}
+              className="rounded-xl h-11 gradient-primary hover:opacity-90 transition-all font-semibold w-full sm:w-auto"
+            >
+              {driveLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Cloud className="h-4 w-4 mr-2" />
+                  Save to Google Drive
+                </>
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

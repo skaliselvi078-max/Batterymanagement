@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Battery, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function LoginForm() {
@@ -59,8 +59,8 @@ export function LoginForm() {
       <div className="glass-card rounded-2xl p-8 shadow-2xl">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center justify-center h-16 w-16 rounded-2xl gradient-primary mb-4 shadow-lg shadow-primary/30 animate-float">
-            <Battery className="h-8 w-8 text-white" />
+          <div className="flex items-center justify-center h-24 w-24 md:h-32 md:w-32 mb-4 animate-float shrink-0">
+            <img src="/logo.png" alt="Battery Inventory Logo" className="h-full w-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
           <p className="text-sm text-muted-foreground mt-1">

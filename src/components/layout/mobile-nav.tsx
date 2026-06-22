@@ -10,7 +10,6 @@ import {
   Database,
   Settings,
   Menu,
-  Battery,
 } from "lucide-react";
 import {
   Sheet,
@@ -44,8 +43,8 @@ export function MobileNav() {
         <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 h-16 border-b border-border">
-          <div className="flex items-center justify-center h-9 w-9 rounded-xl gradient-primary">
-            <Battery className="h-5 w-5 text-white" />
+          <div className="flex items-center justify-center h-9 w-9 shrink-0">
+            <img src="/logo.png" alt="Battery Inventory Logo" className="h-8 w-8 object-contain" />
           </div>
           <div>
             <h1 className="font-bold text-sm">Battery Inventory</h1>

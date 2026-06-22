@@ -78,7 +78,18 @@ export function RecentEntries({ customers }: RecentEntriesProps) {
                   {customer.battery_serial_number}
                 </td>
                 <td className="px-5 py-3 text-sm font-medium">
-                  {formatCurrency(customer.battery_amount)}
+                  {customer.payment_status === "pending" ? (
+                    <div className="flex flex-col">
+                      <span className="text-destructive font-semibold">
+                        {formatCurrency((customer.battery_amount || 0) - (customer.paid_amount || 0))}
+                      </span>
+                      <span className="text-[10px] text-destructive/80 font-medium uppercase tracking-wider">
+                        Balance
+                      </span>
+                    </div>
+                  ) : (
+                    customer.battery_amount !== null ? formatCurrency(customer.battery_amount) : "—"
+                  )}
                 </td>
                 <td className="px-5 py-3 text-sm text-muted-foreground">
                   {formatDate(customer.purchase_date)}
@@ -111,9 +122,15 @@ export function RecentEntries({ customers }: RecentEntriesProps) {
               <span className="font-mono">
                 {customer.battery_serial_number}
               </span>
-              <span className="font-medium text-foreground">
-                {formatCurrency(customer.battery_amount)}
-              </span>
+              {customer.payment_status === "pending" ? (
+                <span className="font-semibold text-destructive">
+                  {formatCurrency((customer.battery_amount || 0) - (customer.paid_amount || 0))} (Bal)
+                </span>
+              ) : (
+                <span className="font-medium text-foreground">
+                  {customer.battery_amount !== null ? formatCurrency(customer.battery_amount) : "—"}
+                </span>
+              )}
             </div>
           </Link>
         ))}

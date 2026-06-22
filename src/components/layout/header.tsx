@@ -3,7 +3,6 @@
 import { ThemeToggle } from "./theme-toggle";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { MobileNav } from "./mobile-nav";
-import { Battery } from "lucide-react";
 
 interface HeaderProps {
   userEmail?: string;
@@ -17,8 +16,8 @@ export function Header({ userEmail }: HeaderProps) {
         <div className="flex items-center gap-3 lg:hidden">
           <MobileNav />
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center h-8 w-8 rounded-lg gradient-primary">
-              <Battery className="h-4 w-4 text-white" />
+            <div className="flex items-center justify-center h-8 w-8 shrink-0">
+              <img src="/logo.png" alt="Battery Inventory Logo" className="h-7 w-7 object-contain" />
             </div>
             <span className="font-bold text-sm">Battery Inv.</span>
           </div>

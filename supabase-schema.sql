@@ -71,22 +71,22 @@ ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 -- Set default user_id to the currently logged in user
 ALTER TABLE customers ALTER COLUMN user_id SET DEFAULT auth.uid();
 
--- Create secure, per-user private policies
+-- Create secure, per-user private policies (supporting legacy NULL user_id rows)
 CREATE POLICY "Users can view their own customers"
   ON customers FOR SELECT
   TO authenticated
-  USING (auth.uid() = user_id AND is_deleted = FALSE);
+  USING (auth.uid() = user_id OR user_id IS NULL);
 
 CREATE POLICY "Users can insert their own customers"
   ON customers FOR INSERT
   TO authenticated
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
 
 CREATE POLICY "Users can update their own customers"
   ON customers FOR UPDATE
   TO authenticated
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING (auth.uid() = user_id OR user_id IS NULL)
+  WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
 
 -- =============================================
 -- Storage Bucket for Backups

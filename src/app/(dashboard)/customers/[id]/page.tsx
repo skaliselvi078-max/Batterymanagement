@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/customers/status-badge";
 import { DeleteDialog } from "@/components/customers/delete-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -16,11 +17,12 @@ import {
   Trash2,
   User,
   Phone,
-  Mail,
   Battery,
   Calendar,
   IndianRupee,
   Tag,
+  Car,
+  Server,
 } from "lucide-react";
 
 export default function CustomerDetailsPage() {
@@ -52,14 +54,25 @@ export default function CustomerDetailsPage() {
 
   const handleDelete = async () => {
     if (!customer) return;
-    const { error } = await supabase
-      .from("customers")
-      .update({ is_deleted: true })
-      .eq("id", customer.id);
+    try {
+      const { error } = await supabase
+        .from("customers")
+        .update({ is_deleted: true })
+        .eq("id", customer.id);
 
-    if (error) return;
-    router.push("/customers");
-    router.refresh();
+      if (error) {
+        toast.error(`Failed to delete customer: ${error.message}`);
+        console.error("Delete customer error:", error);
+        return;
+      }
+
+      toast.success("Customer deleted successfully!");
+      router.push("/customers");
+      router.refresh();
+    } catch (err: any) {
+      toast.error(`An unexpected error occurred: ${err.message || err}`);
+      console.error("Unexpected delete error:", err);
+    }
   };
 
   if (loading) {
@@ -87,32 +100,46 @@ export default function CustomerDetailsPage() {
     {
       icon: User,
       label: "Customer Name",
-      value: customer.customer_name,
+      value: customer.customer_name || "—",
       gradient: "gradient-primary",
     },
     {
       icon: Phone,
       label: "Phone Number",
-      value: customer.phone_number,
+      value: customer.phone_number || "—",
       gradient: "gradient-info",
     },
-    {
-      icon: Mail,
-      label: "Email Address",
-      value: customer.email || "—",
-      gradient: "gradient-success",
-    },
+    ...(customer.vehicle_number
+      ? [
+          {
+            icon: Car,
+            label: "Vehicle Number",
+            value: customer.vehicle_number,
+            gradient: "gradient-success",
+          },
+        ]
+      : []),
+    ...(customer.ups_name
+      ? [
+          {
+            icon: Server,
+            label: "UPS Name",
+            value: customer.ups_name,
+            gradient: "gradient-success",
+          },
+        ]
+      : []),
     {
       icon: Battery,
       label: "Battery Serial Number",
-      value: customer.battery_serial_number,
+      value: customer.battery_serial_number || "—",
       gradient: "gradient-warning",
       mono: true,
     },
     {
       icon: IndianRupee,
       label: "Battery Cost",
-      value: formatCurrency(customer.battery_amount),
+      value: customer.battery_amount !== null ? formatCurrency(customer.battery_amount) : "—",
       gradient: "gradient-success",
     },
     ...(customer.payment_status === "pending"
@@ -126,7 +153,7 @@ export default function CustomerDetailsPage() {
           {
             icon: IndianRupee,
             label: "Remaining Balance",
-            value: formatCurrency(customer.battery_amount - (customer.paid_amount || 0)),
+            value: formatCurrency((customer.battery_amount || 0) - (customer.paid_amount || 0)),
             gradient: "gradient-danger",
           },
         ]
@@ -226,7 +253,7 @@ export default function CustomerDetailsPage() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDelete}
-        customerName={customer.customer_name}
+        customerName={customer.customer_name || "Unnamed Customer"}
       />
     </div>
   );
