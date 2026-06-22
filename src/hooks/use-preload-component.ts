@@ -11,13 +11,20 @@ export function usePreloadComponent(
   useEffect(() => {
     if (enabled && typeof window !== "undefined") {
       // Preload on next tick to avoid blocking
-      const timer = requestIdleCallback(() => {
-        importFn().catch((err) => console.error("Error preloading component:", err));
-      });
+      const hasIdle = typeof requestIdleCallback !== "undefined";
+      const timer = hasIdle
+        ? requestIdleCallback(() => {
+            importFn().catch((err) => console.error("Error preloading component:", err));
+          })
+        : setTimeout(() => {
+            importFn().catch((err) => console.error("Error preloading component:", err));
+          }, 100);
 
       return () => {
-        if (typeof cancelIdleCallback !== "undefined") {
-          cancelIdleCallback(timer);
+        if (hasIdle && typeof cancelIdleCallback !== "undefined") {
+          cancelIdleCallback(timer as number);
+        } else {
+          clearTimeout(timer as any);
         }
       };
     }
