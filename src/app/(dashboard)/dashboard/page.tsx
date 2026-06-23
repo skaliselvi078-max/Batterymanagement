@@ -78,19 +78,26 @@ export default async function DashboardPage() {
       }
     );
 
-    // Fetch data on server - blocks until ready
-    const { data: customers, error } = await supabase
+    // Fetch only the necessary fields for stats to keep data payload extremely small and support at least 20,000 customers
+    const { data: statsData, error: statsError } = await supabase
       .from("customers")
-      .select("*", { count: "exact" })
+      .select("payment_status, battery_amount, paid_amount")
+      .eq("is_deleted", false)
+      .limit(20000);
+
+    if (statsError) throw statsError;
+
+    // Fetch only the 5 most recent entries with full details for the dashboard UI
+    const { data: recentCustomers, error: recentError } = await supabase
+      .from("customers")
+      .select("*")
       .eq("is_deleted", false)
       .order("created_at", { ascending: false })
-      .limit(100);
+      .limit(5);
 
-    if (error) throw error;
+    if (recentError) throw recentError;
 
-    const allCustomers = customers || [];
-    const stats = calculateStats(allCustomers);
-    const recentCustomers = allCustomers.slice(0, 5);
+    const stats = calculateStats((statsData || []) as Customer[]);
 
     return (
       <div className="space-y-8">
