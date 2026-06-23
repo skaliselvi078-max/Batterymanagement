@@ -109,10 +109,10 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
 
     setIsLoading(true);
 
-    const batteryAmount = formData.battery_amount.trim() ? parseFloat(formData.battery_amount) : null;
+    const batteryAmount = formData.battery_amount.trim() ? Math.round(Number(formData.battery_amount)) : null;
     const paidAmount = formData.payment_status === "completed"
       ? (batteryAmount || 0)
-      : (formData.paid_amount.trim() ? parseFloat(formData.paid_amount) : 0);
+      : (formData.paid_amount.trim() ? Math.round(Number(formData.paid_amount)) : 0);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -305,7 +305,7 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
               <Input
                 id="battery_amount"
                 type="number"
-                step="0.01"
+                step="1"
                 min="0"
                 placeholder=" "
                 value={formData.battery_amount}
@@ -379,7 +379,7 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
                 <Input
                   id="paid_amount"
                   type="number"
-                  step="0.01"
+                  step="1"
                   min="0"
                   placeholder=" "
                   value={formData.paid_amount}
