@@ -12,54 +12,6 @@ import {
   IndianRupee,
 } from "lucide-react";
 
-// Calculate stats (pure function)
-function calculateStats(customers: Customer[]): DashboardStats {
-  const totalCustomers = customers.length;
-  const pending = customers.filter(
-    (c) => c.payment_status === "pending"
-  );
-  const completed = customers.filter(
-    (c) => c.payment_status === "completed" || c.payment_status === "paid"
-  );
-
-  const totalRevenue = customers.reduce(
-    (sum, c) => sum + Number(c.battery_amount),
-    0
-  );
-
-  const pendingAmount = pending.reduce(
-    (sum, c) => sum + (Number(c.battery_amount) - Number(c.paid_amount || 0)),
-    0
-  );
-
-  const completedAmount = completed.reduce(
-    (sum, c) => sum + Number(c.battery_amount),
-    0
-  ) + pending.reduce(
-    (sum, c) => sum + Number(c.paid_amount || 0),
-    0
-  );
-
-  const paidAmount = completed.reduce(
-    (sum, c) => sum + Number(c.battery_amount),
-    0
-  ) + pending.reduce(
-    (sum, c) => sum + Number(c.paid_amount || 0),
-    0
-  );
-
-  return {
-    totalCustomers,
-    totalPending: pending.length,
-    pendingAmount,
-    totalCompleted: completed.length,
-    completedAmount,
-    totalPaid: completed.length,
-    paidAmount,
-    totalRevenue,
-  };
-}
-
 // Server Component - fetches data on server
 export default async function DashboardPage() {
   try {
@@ -78,34 +30,26 @@ export default async function DashboardPage() {
       }
     );
 
-    // Fetch only the necessary fields for stats, paging by 1000 rows to bypass Supabase's API row limit (up to 20,000 customers)
-    let statsData: any[] = [];
-    let page = 0;
-    const limit = 1000;
-    let fetchMore = true;
+    // 1. Fetch stats from the view (extremely fast single trip)
+    const { data: viewStats, error: statsError } = await supabase
+      .from("dashboard_stats_view")
+      .select("*")
+      .single();
 
-    while (fetchMore && statsData.length < 20000) {
-      const from = page * limit;
-      const to = from + limit - 1;
-      
-      const { data, error: statsError } = await supabase
-        .from("customers")
-        .select("payment_status, battery_amount, paid_amount")
-        .eq("is_deleted", false)
-        .range(from, to);
+    if (statsError) throw statsError;
 
-      if (statsError) throw statsError;
+    const stats: DashboardStats = {
+      totalCustomers: Number(viewStats?.total_customers || 0),
+      totalPending: Number(viewStats?.total_pending || 0),
+      pendingAmount: Number(viewStats?.pending_amount || 0),
+      totalCompleted: Number(viewStats?.total_completed || 0),
+      completedAmount: Number(viewStats?.completed_amount || 0),
+      totalPaid: Number(viewStats?.total_completed || 0),
+      paidAmount: Number(viewStats?.completed_amount || 0),
+      totalRevenue: Number(viewStats?.total_revenue || 0),
+    };
 
-      if (data && data.length > 0) {
-        statsData = statsData.concat(data);
-        fetchMore = data.length === limit;
-        page++;
-      } else {
-        fetchMore = false;
-      }
-    }
-
-    // Fetch only the 5 most recent entries with full details for the dashboard UI
+    // 2. Fetch only the 5 most recent entries with full details for the dashboard UI
     const { data: recentCustomers, error: recentError } = await supabase
       .from("customers")
       .select("*")
@@ -114,8 +58,6 @@ export default async function DashboardPage() {
       .limit(5);
 
     if (recentError) throw recentError;
-
-    const stats = calculateStats((statsData || []) as Customer[]);
 
     return (
       <div className="space-y-8">
