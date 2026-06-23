@@ -170,9 +170,8 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
                 value={formData.customer_name}
                 onChange={(e) => handleChange("customer_name", e.target.value)}
                 onFocus={handleFocus}
-                className={`h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${
-                  errors.customer_name ? "border-destructive" : "border-input"
-                }`}
+                className={`h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${errors.customer_name ? "border-destructive" : "border-input"
+                  }`}
                 disabled={isLoading}
               />
               <label htmlFor="customer_name" className="floating-label">
@@ -196,9 +195,8 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
                 value={formData.phone_number}
                 onChange={(e) => handleChange("phone_number", e.target.value)}
                 onFocus={handleFocus}
-                className={`h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${
-                  errors.phone_number ? "border-destructive" : "border-input"
-                }`}
+                className={`h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${errors.phone_number ? "border-destructive" : "border-input"
+                  }`}
                 disabled={isLoading}
               />
               <label htmlFor="phone_number" className="floating-label">
@@ -287,9 +285,8 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
               value={formData.purchase_date}
               onChange={(e) => handleChange("purchase_date", e.target.value)}
               onFocus={handleFocus}
-              className={`h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${
-                errors.purchase_date ? "border-destructive" : "border-input"
-              }`}
+              className={`h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${errors.purchase_date ? "border-destructive" : "border-input"
+                }`}
               disabled={isLoading}
             />
             {errors.purchase_date && (
@@ -311,9 +308,8 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
                 value={formData.battery_amount}
                 onChange={(e) => handleChange("battery_amount", e.target.value)}
                 onFocus={handleFocus}
-                className={`h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${
-                  errors.battery_amount ? "border-destructive" : "border-input"
-                }`}
+                className={`h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${errors.battery_amount ? "border-destructive" : "border-input"
+                  }`}
                 disabled={isLoading}
               />
               <label htmlFor="battery_amount" className="floating-label">
@@ -344,9 +340,8 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
             >
               <SelectTrigger
                 id="payment_status"
-                className={`h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${
-                  errors.payment_status ? "border-destructive" : "border-input"
-                }`}
+                className={`h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${errors.payment_status ? "border-destructive" : "border-input"
+                  }`}
               >
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
@@ -385,9 +380,8 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
                   value={formData.paid_amount}
                   onChange={(e) => handleChange("paid_amount", e.target.value)}
                   onFocus={handleFocus}
-                  className={`h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${
-                    errors.paid_amount ? "border-destructive" : "border-input"
-                  }`}
+                  className={`h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${errors.paid_amount ? "border-destructive" : "border-input"
+                    }`}
                   disabled={isLoading}
                 />
                 <label htmlFor="paid_amount" className="floating-label">
@@ -418,11 +412,10 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
                   handleChange("battery_serial_number", e.target.value)
                 }
                 onFocus={handleFocus}
-                className={`h-14 rounded-xl bg-background border-2 text-base font-mono transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${
-                  errors.battery_serial_number
+                className={`h-14 rounded-xl bg-background border-2 text-base font-mono transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${errors.battery_serial_number
                     ? "border-destructive"
                     : "border-input"
-                }`}
+                  }`}
                 disabled={isLoading}
               />
               <label htmlFor="battery_serial_number" className="floating-label">
