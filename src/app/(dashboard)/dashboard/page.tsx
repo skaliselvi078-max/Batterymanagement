@@ -78,14 +78,32 @@ export default async function DashboardPage() {
       }
     );
 
-    // Fetch only the necessary fields for stats to keep data payload extremely small and support at least 20,000 customers
-    const { data: statsData, error: statsError } = await supabase
-      .from("customers")
-      .select("payment_status, battery_amount, paid_amount")
-      .eq("is_deleted", false)
-      .limit(20000);
+    // Fetch only the necessary fields for stats, paging by 1000 rows to bypass Supabase's API row limit (up to 20,000 customers)
+    let statsData: any[] = [];
+    let page = 0;
+    const limit = 1000;
+    let fetchMore = true;
 
-    if (statsError) throw statsError;
+    while (fetchMore && statsData.length < 20000) {
+      const from = page * limit;
+      const to = from + limit - 1;
+      
+      const { data, error: statsError } = await supabase
+        .from("customers")
+        .select("payment_status, battery_amount, paid_amount")
+        .eq("is_deleted", false)
+        .range(from, to);
+
+      if (statsError) throw statsError;
+
+      if (data && data.length > 0) {
+        statsData = statsData.concat(data);
+        fetchMore = data.length === limit;
+        page++;
+      } else {
+        fetchMore = false;
+      }
+    }
 
     // Fetch only the 5 most recent entries with full details for the dashboard UI
     const { data: recentCustomers, error: recentError } = await supabase

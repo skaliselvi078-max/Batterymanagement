@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Camera, CameraOff, Loader2 } from "lucide-react";
+import { Camera, CameraOff, Loader2, Flashlight, FlashlightOff } from "lucide-react";
 
 interface QRScannerDialogProps {
   open: boolean;
@@ -25,9 +25,13 @@ export function QRScannerDialog({
   const html5QrCodeRef = useRef<any>(null);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isTorchSupported, setIsTorchSupported] = useState(false);
+  const [isTorchOn, setIsTorchOn] = useState(false);
 
   const handleClose = async () => {
     setIsStarting(false);
+    setIsTorchOn(false);
+    setIsTorchSupported(false);
     if (html5QrCodeRef.current) {
       const scannerInstance = html5QrCodeRef.current;
       html5QrCodeRef.current = null;
@@ -40,6 +44,19 @@ export function QRScannerDialog({
       }
     }
     onOpenChange(false);
+  };
+
+  const toggleTorch = async () => {
+    if (!html5QrCodeRef.current) return;
+    try {
+      const nextState = !isTorchOn;
+      await html5QrCodeRef.current.applyVideoConstraints({
+        advanced: [{ torch: nextState }]
+      });
+      setIsTorchOn(nextState);
+    } catch (err) {
+      console.error("Failed to toggle torch:", err);
+    }
   };
 
   useEffect(() => {
@@ -85,7 +102,16 @@ export function QRScannerDialog({
           }
         );
 
-        if (mounted) setIsStarting(false);
+        if (mounted) {
+          setIsStarting(false);
+          // Check if torch/flashlight is supported
+          try {
+            const capabilities = scanner.getRunningTrackCapabilities() as any;
+            setIsTorchSupported(!!capabilities.torch);
+          } catch (e) {
+            console.warn("Torch capability check failed:", e);
+          }
+        }
       } catch (err: any) {
         if (mounted) {
           setIsStarting(false);
@@ -102,6 +128,8 @@ export function QRScannerDialog({
     return () => {
       mounted = false;
       clearTimeout(timer);
+      setIsTorchOn(false);
+      setIsTorchSupported(false);
       if (html5QrCodeRef.current) {
         const scannerInstance = html5QrCodeRef.current;
         html5QrCodeRef.current = null;
@@ -133,6 +161,21 @@ export function QRScannerDialog({
             style={{ minHeight: "300px" }}
           >
             <div id="qr-reader" ref={scannerRef} className="w-full" />
+
+            {isTorchSupported && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute top-4 right-4 rounded-xl bg-black/60 border-0 hover:bg-black/80 text-white hover:text-white z-10 animate-fade-in"
+                onClick={toggleTorch}
+              >
+                {isTorchOn ? (
+                  <FlashlightOff className="h-5 w-5 text-yellow-400" />
+                ) : (
+                  <Flashlight className="h-5 w-5" />
+                )}
+              </Button>
+            )}
 
             {isStarting && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white gap-3">

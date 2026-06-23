@@ -57,7 +57,7 @@ export default function CustomerDetailsPage() {
     try {
       const { error } = await supabase
         .from("customers")
-        .update({ is_deleted: true })
+        .delete()
         .eq("id", customer.id);
 
       if (error) {
