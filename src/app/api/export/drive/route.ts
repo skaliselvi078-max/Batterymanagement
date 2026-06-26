@@ -15,6 +15,7 @@ function generateExcelBuffer(data: any[]) {
 
     return {
       "Customer Name": customer.customer_name || "",
+      "Remarks": customer.remarks || "",
       "Phone Number": customer.phone_number || "",
       "Vehicle Number": customer.vehicle_number || "",
       "UPS Name": customer.ups_name || "",
@@ -52,6 +53,7 @@ function generateExcelBuffer(data: any[]) {
 function generateCSVBuffer(data: any[]) {
   const headers = [
     "Customer Name",
+    "Remarks",
     "Phone Number",
     "Vehicle Number",
     "UPS Name",
@@ -73,6 +75,7 @@ function generateCSVBuffer(data: any[]) {
 
     return [
       customer.customer_name || "",
+      customer.remarks || "",
       customer.phone_number || "",
       customer.vehicle_number || "",
       customer.ups_name || "",

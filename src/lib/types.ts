@@ -5,6 +5,7 @@
 export interface Customer {
   id: string;
   customer_name: string | null;
+  remarks: string | null;
   phone_number: string | null;
   email: string | null;
   battery_serial_number: string | null;

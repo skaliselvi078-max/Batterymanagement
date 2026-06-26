@@ -15,6 +15,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ALTER TABLE customers ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(10, 2) NOT NULL DEFAULT 0.00;
 -- ALTER TABLE customers DROP CONSTRAINT IF EXISTS customers_payment_status_check;
 -- ALTER TABLE customers ADD CONSTRAINT customers_payment_status_check CHECK (payment_status IN ('pending', 'completed'));
+-- ALTER TABLE customers ADD COLUMN IF NOT EXISTS remarks TEXT;
 -- =============================================
 
 -- =============================================
@@ -23,6 +24,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE customers (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   customer_name TEXT NOT NULL,
+  remarks TEXT,
   phone_number TEXT NOT NULL,
   email TEXT,
   battery_serial_number TEXT NOT NULL,

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { Customer } from "@/lib/types";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
@@ -23,18 +24,18 @@ import {
   Tag,
   Car,
   Server,
+  MessageSquare,
 } from "lucide-react";
 
 export default function CustomerDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const supabase = createClient();
-  const [customer, setCustomer] = useState<Customer | null>(null);
-  const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchCustomer = async () => {
+  const { data: customer, isLoading: loading } = useSWR(
+    params.id ? `customer-${params.id}` : null,
+    async () => {
       const { data, error } = await supabase
         .from("customers")
         .select("*")
@@ -43,14 +44,12 @@ export default function CustomerDetailsPage() {
 
       if (error || !data) {
         router.push("/customers");
-        return;
+        return null;
       }
-      setCustomer(data);
-      setLoading(false);
-    };
-
-    fetchCustomer();
-  }, [params.id, supabase, router]);
+      return data as Customer;
+    },
+    { revalidateOnFocus: false }
+  );
 
   const handleDelete = async () => {
     if (!customer) return;
@@ -103,6 +102,17 @@ export default function CustomerDetailsPage() {
       value: customer.customer_name || "—",
       gradient: "gradient-primary",
     },
+    ...(customer.remarks
+      ? [
+          {
+            icon: MessageSquare,
+            label: "Remarks",
+            value: customer.remarks,
+            gradient: "gradient-info",
+            wrap: true,
+          },
+        ]
+      : []),
     {
       icon: Phone,
       label: "Phone Number",
@@ -235,7 +245,9 @@ export default function CustomerDetailsPage() {
                   <StatusBadge status={item.value} className="mt-1" />
                 ) : (
                   <p
-                    className={`text-sm font-semibold text-foreground mt-0.5 truncate ${
+                    className={`text-sm font-semibold text-foreground mt-0.5 ${
+                      item.wrap ? "whitespace-pre-wrap break-words" : "truncate"
+                    } ${
                       item.mono ? "font-mono" : ""
                     }`}
                   >

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { Customer } from "@/lib/types";
 import { CustomerForm } from "@/components/customers/customer-form";
@@ -13,11 +13,10 @@ export default function EditCustomerPage() {
   const params = useParams();
   const router = useRouter();
   const supabase = createClient();
-  const [customer, setCustomer] = useState<Customer | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchCustomer = async () => {
+  const { data: customer, isLoading: loading } = useSWR(
+    params.id ? `customer-${params.id}` : null,
+    async () => {
       const { data, error } = await supabase
         .from("customers")
         .select("*")
@@ -26,14 +25,12 @@ export default function EditCustomerPage() {
 
       if (error || !data) {
         router.push("/customers");
-        return;
+        return null;
       }
-      setCustomer(data);
-      setLoading(false);
-    };
-
-    fetchCustomer();
-  }, [params.id, supabase, router]);
+      return data as Customer;
+    },
+    { revalidateOnFocus: false }
+  );
 
   if (loading) {
     return (

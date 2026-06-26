@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { Customer } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -29,42 +30,39 @@ import {
 
 export default function CustomersPage() {
   const supabase = createClient();
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const [sortAsc, setSortAsc] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
-  const fetchCustomers = useCallback(async () => {
-    setLoading(true);
-    try {
-      // Build base query with faster performance
+  // Reset to page 1 when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, statusFilter]);
+
+  const { data, isLoading: loading } = useSWR(
+    ["customers", debouncedSearch, currentPage, pageSize, sortAsc, statusFilter],
+    async () => {
       let query = supabase
         .from("customers")
         .select("*", { count: "exact" })
         .eq("is_deleted", false);
 
-      // Search across all relevant fields
       if (debouncedSearch) {
         query = query.or(
           `customer_name.ilike.%${debouncedSearch}%,phone_number.ilike.%${debouncedSearch}%,battery_serial_number.ilike.%${debouncedSearch}%,vehicle_number.ilike.%${debouncedSearch}%,ups_name.ilike.%${debouncedSearch}%`
         );
       }
 
-      // Status filter
       if (statusFilter !== "all") {
         query = query.eq("payment_status", statusFilter);
       }
 
-      // Sort
       query = query.order("purchase_date", { ascending: sortAsc });
 
-      // Pagination
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
       query = query.range(from, to);
@@ -72,27 +70,13 @@ export default function CustomersPage() {
       const { data, error, count } = await query;
       if (error) throw error;
 
-      setCustomers(data || []);
-      setTotalCount(count || 0);
-    } catch (error) {
-      console.error("Error fetching customers:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase, debouncedSearch, currentPage, pageSize, sortAsc, statusFilter]);
+      return { customers: (data as Customer[]) || [], totalCount: count || 0 };
+    },
+    { revalidateOnFocus: false, keepPreviousData: true }
+  );
 
-  // Combine effects: fetch on mount and dependency changes, reset page on search/filter
-  useEffect(() => {
-    // Reset to page 1 when search or status filter changes (before fetch)
-    if (currentPage !== 1 && (debouncedSearch || statusFilter !== "all")) {
-      setCurrentPage(1);
-      return; // Will trigger this effect again with currentPage=1
-    }
-    
-    // Then fetch with current page/size
-    fetchCustomers();
-  }, [fetchCustomers, debouncedSearch, statusFilter, currentPage]);
-
+  const customers = data?.customers || [];
+  const totalCount = data?.totalCount || 0;
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
@@ -195,7 +179,7 @@ export default function CustomersPage() {
       </div>
 
       {/* Table (Desktop) */}
-      {loading ? (
+      {loading && !data ? (
         <div className="glass-card rounded-2xl overflow-hidden">
           <div className="p-4 space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -257,7 +241,7 @@ export default function CustomersPage() {
                   <tr
                     key={customer.id}
                     className="border-b border-border/50 last:border-0 hover:bg-accent/50 transition-colors animate-fade-in"
-                    style={{ animationDelay: `${index * 30}ms` }}
+                    style={{ animationDelay: `${index * 15}ms` }}
                   >
                     <td className="px-5 py-3">
                       <span className="font-medium text-sm">
@@ -324,7 +308,7 @@ export default function CustomersPage() {
                 key={customer.id}
                 href={`/customers/${customer.id}`}
                 className="block glass-card rounded-xl p-4 hover:shadow-lg transition-all animate-fade-in"
-                style={{ animationDelay: `${index * 30}ms` }}
+                style={{ animationDelay: `${index * 15}ms` }}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold text-sm">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,13 +26,11 @@ interface BackupFile {
 
 export default function BackupsPage() {
   const supabase = createClient();
-  const [backups, setBackups] = useState<BackupFile[]>([]);
-  const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
 
-  const fetchBackups = useCallback(async () => {
-    setLoading(true);
-    try {
+  const { data: backups = [], isLoading: loading, isValidating, mutate } = useSWR(
+    "backups",
+    async () => {
       const { data, error } = await supabase.storage
         .from("backups")
         .list("", {
@@ -39,18 +38,10 @@ export default function BackupsPage() {
         });
 
       if (error) throw error;
-      setBackups((data as BackupFile[]) || []);
-    } catch (error: any) {
-      console.error("Error fetching backups:", error);
-      toast.error("Could not load backups. Make sure the 'backups' storage bucket exists.");
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase]);
-
-  useEffect(() => {
-    fetchBackups();
-  }, [fetchBackups]);
+      return (data as BackupFile[]) || [];
+    },
+    { revalidateOnFocus: false }
+  );
 
   const handleDownload = async (fileName: string) => {
     setDownloading(fileName);
@@ -100,16 +91,16 @@ export default function BackupsPage() {
         <Button
           variant="outline"
           className="rounded-xl border-2"
-          onClick={fetchBackups}
-          disabled={loading}
+          onClick={() => mutate()}
+          disabled={isValidating}
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`h-4 w-4 mr-2 ${isValidating ? "animate-spin" : ""}`} />
           Refresh
         </Button>
       </div>
 
       {/* Backups List */}
-      {loading ? (
+      {loading && !backups.length ? (
         <div className="glass-card rounded-2xl p-4 space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center justify-between">
@@ -138,7 +129,7 @@ export default function BackupsPage() {
             <div
               key={backup.name}
               className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors animate-fade-in"
-              style={{ animationDelay: `${index * 30}ms` }}
+              style={{ animationDelay: `${index * 15}ms` }}
             >
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10">

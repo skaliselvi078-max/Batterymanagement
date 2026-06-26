@@ -6,6 +6,7 @@ export function exportToCSV(data: Customer[], filename: string): void {
 
   const headers = [
     "Customer Name",
+    "Remarks",
     "Phone Number",
     "Vehicle Number",
     "UPS Name",
@@ -27,6 +28,7 @@ export function exportToCSV(data: Customer[], filename: string): void {
 
     return [
       customer.customer_name || "",
+      customer.remarks || "",
       customer.phone_number || "",
       customer.vehicle_number || "",
       customer.ups_name || "",
@@ -63,6 +65,7 @@ export function exportToExcel(data: Customer[], filename: string): void {
 
     return {
       "Customer Name": customer.customer_name || "",
+      "Remarks": customer.remarks || "",
       "Phone Number": customer.phone_number || "",
       "Vehicle Number": customer.vehicle_number || "",
       "UPS Name": customer.ups_name || "",
@@ -114,6 +117,7 @@ export function generateCSVString(data: Customer[]): string {
   const headers = [
     "id",
     "customer_name",
+    "remarks",
     "phone_number",
     "vehicle_number",
     "ups_name",
@@ -130,6 +134,7 @@ export function generateCSVString(data: Customer[]): string {
   const rows = data.map((customer) => [
     customer.id,
     customer.customer_name || "",
+    customer.remarks || "",
     customer.phone_number || "",
     customer.vehicle_number || "",
     customer.ups_name || "",

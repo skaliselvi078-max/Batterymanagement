@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Customer } from "@/lib/types";
@@ -53,6 +53,7 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
 
   const [formData, setFormData] = useState({
     customer_name: customer?.customer_name || "",
+    remarks: customer?.remarks || "",
     phone_number: customer?.phone_number || "",
     battery_serial_number: customer?.battery_serial_number || "",
     battery_amount: customer?.battery_amount?.toString() || "",
@@ -120,6 +121,7 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
 
       const payload = {
         customer_name: formData.customer_name.trim() || null,
+        remarks: formData.remarks.trim() || null,
         phone_number: formData.phone_number.trim() || null,
         battery_serial_number: formData.battery_serial_number.trim() || null,
         battery_amount: batteryAmount,
@@ -183,6 +185,24 @@ export function CustomerForm({ customer, mode }: CustomerFormProps) {
                 {errors.customer_name}
               </p>
             )}
+          </div>
+
+          {/* Remarks */}
+          <div className="space-y-2">
+            <div className="floating-label-group">
+              <Input
+                id="remarks"
+                placeholder=" "
+                value={formData.remarks}
+                onChange={(e) => handleChange("remarks", e.target.value)}
+                onFocus={handleFocus}
+                className="h-14 rounded-xl bg-background border-2 text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 border-input"
+                disabled={isLoading}
+              />
+              <label htmlFor="remarks" className="floating-label">
+                Remarks
+              </label>
+            </div>
           </div>
 
           {/* Phone Number */}
