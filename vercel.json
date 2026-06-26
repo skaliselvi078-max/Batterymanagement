@@ -7,6 +7,10 @@
     {
       "path": "/api/backup",
       "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/backup/drive",
+      "schedule": "0 2 1 * *"
     }
   ]
 }

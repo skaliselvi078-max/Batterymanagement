@@ -40,11 +40,6 @@ export function ExportButton() {
   const handleDownload = async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from("customers")
-        .select("*")
-        .eq("is_deleted", false);
-
       if (exportMode === "range") {
         if (!startDate || !endDate) {
           toast.error("Please select both start and end dates");
@@ -56,22 +51,49 @@ export function ExportButton() {
           setLoading(false);
           return;
         }
+      }
+
+      let allData: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        let query = supabase
+          .from("customers")
+          .select("*")
+          .eq("is_deleted", false);
+
+        if (exportMode === "range") {
+          query = query
+            .gte("purchase_date", startDate)
+            .lte("purchase_date", endDate);
+        }
+
+        if (statusFilter !== "all") {
+          query = query.eq("payment_status", statusFilter);
+        }
+
         query = query
-          .gte("purchase_date", startDate)
-          .lte("purchase_date", endDate);
+          .order("purchase_date", { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          if (data.length < pageSize) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
       }
 
-      if (statusFilter !== "all") {
-        query = query.eq("payment_status", statusFilter);
-      }
-
-      // Order by purchase_date DESC for consistency
-      query = query.order("purchase_date", { ascending: false });
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const customersData = data || [];
+      const customersData = allData;
       if (customersData.length === 0) {
         toast.info("No data found for the selected filters");
         return;

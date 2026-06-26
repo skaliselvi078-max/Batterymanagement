@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { google } from "googleapis";
 import { createClient } from "@/lib/supabase/server";
 import * as XLSX from "xlsx";
@@ -49,98 +49,35 @@ function generateExcelBuffer(data: any[]) {
   return excelBuffer;
 }
 
-// Helper function to build CSV buffer in memory
-function generateCSVBuffer(data: any[]) {
-  const headers = [
-    "Customer Name",
-    "Remarks",
-    "Phone Number",
-    "Vehicle Number",
-    "UPS Name",
-    "Battery Serial Number",
-    "Battery Amount",
-    "Paid Amount",
-    "Remaining Balance",
-    "Purchase Date",
-    "Payment Status",
-    "Created At",
-  ];
+export async function GET(request: Request) {
+  // 1. Verify the request is from Vercel Cron or authorized scheduler
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  const rows = data.map((customer) => {
-    const batteryAmount = customer.battery_amount || 0;
-    const paidAmount = customer.payment_status === "completed"
-      ? batteryAmount
-      : (customer.paid_amount || 0);
-    const remainingBalance = batteryAmount - paidAmount;
-
-    return [
-      customer.customer_name || "",
-      customer.remarks || "",
-      customer.phone_number || "",
-      customer.vehicle_number || "",
-      customer.ups_name || "",
-      customer.battery_serial_number || "",
-      batteryAmount.toString(),
-      paidAmount.toString(),
-      remainingBalance.toString(),
-      customer.purchase_date,
-      customer.payment_status,
-      customer.created_at,
-    ];
-  });
-
-  const csvContent = [
-    headers.join(","),
-    ...rows.map((row) =>
-      row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(",")
-    ),
-  ].join("\n");
-
-  return Buffer.from(csvContent, "utf-8");
-}
-
-export async function POST(request: NextRequest) {
   try {
-    // 1. Authenticate the request using Supabase auth session
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // 2. Parse request body
-    const body = await request.json();
-    const { exportMode, startDate, endDate, statusFilter, format } = body;
-
-    // 3. Query customers from Supabase (paginated to bypass 1000 max rows limit)
+    // 2. Fetch all customers (including soft-deleted for full monthly backup, paginated to bypass 1000 max rows limit)
     let customers: any[] = [];
     let page = 0;
     const pageSize = 1000;
     let hasMore = true;
 
     while (hasMore) {
-      let query = supabase
+      const { data, error: fetchError } = await supabase
         .from("customers")
         .select("*")
-        .eq("is_deleted", false);
-
-      if (exportMode === "range" && startDate && endDate) {
-        query = query
-          .gte("purchase_date", startDate)
-          .lte("purchase_date", endDate);
-      }
-
-      if (statusFilter && statusFilter !== "all") {
-        query = query.eq("payment_status", statusFilter);
-      }
-
-      query = query
-        .order("purchase_date", { ascending: false })
+        .order("created_at", { ascending: false })
         .range(page * pageSize, (page + 1) * pageSize - 1);
 
-      const { data, error: queryError } = await query;
-      if (queryError) throw queryError;
+      if (fetchError) {
+        return NextResponse.json(
+          { success: false, error: fetchError.message },
+          { status: 500 }
+        );
+      }
 
       if (data && data.length > 0) {
         customers = [...customers, ...data];
@@ -154,30 +91,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (customers.length === 0) {
-      return NextResponse.json({ error: "No data found for the selected filters" }, { status: 404 });
+    if (!customers || customers.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: "No data to backup",
+        timestamp: new Date().toISOString(),
+      });
     }
 
-    // 4. Generate file buffer
-    let fileBuffer: Buffer;
-    let mimeType: string;
-    let fileName: string;
+    // 3. Generate Excel file buffer
+    const fileBuffer = generateExcelBuffer(customers);
+    const fileName = `monthly-backup-${new Date().toISOString().split("T")[0]}.xlsx`;
+    const mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-    const todayStr = new Date().toISOString().split("T")[0];
-    const statusSuffix = statusFilter && statusFilter !== "all" ? `-${statusFilter}` : "";
-    const fileDate = exportMode === "range" ? `${startDate}_to_${endDate}` : todayStr;
-
-    if (format === "csv") {
-      fileBuffer = generateCSVBuffer(customers);
-      mimeType = "text/csv";
-      fileName = `battery-inventory${statusSuffix}-${fileDate}.csv`;
-    } else {
-      fileBuffer = generateExcelBuffer(customers);
-      mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-      fileName = `battery-inventory${statusSuffix}-${fileDate}.xlsx`;
-    }
-
-    // 5. Connect to Google Drive using Admin OAuth 2.0 or Service Account Credentials
+    // 4. Connect to Google Drive using Admin OAuth 2.0 or Service Account Credentials
     let auth: any;
     if (process.env.GOOGLE_REFRESH_TOKEN) {
       const oauth2Client = new google.auth.OAuth2(
@@ -207,7 +134,7 @@ export async function POST(request: NextRequest) {
     mediaStream.push(fileBuffer);
     mediaStream.push(null);
 
-    // 6. Upload file directly into the shared folder ID
+    // 5. Upload file directly into the shared folder ID
     const response = await drive.files.create({
       requestBody: {
         name: fileName,
@@ -225,11 +152,13 @@ export async function POST(request: NextRequest) {
       success: true,
       fileId: response.data.id,
       fileName: response.data.name,
+      records: customers.length,
+      timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error("Google Drive Upload Error:", error);
+    console.error("Google Drive Auto-Backup Error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to upload to Google Drive" },
+      { success: false, error: error.message || "Failed to auto-backup to Google Drive" },
       { status: 500 }
     );
   }

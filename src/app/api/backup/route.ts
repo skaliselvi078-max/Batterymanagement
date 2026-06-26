@@ -12,17 +12,36 @@ export async function GET(request: Request) {
   try {
     const supabase = await createClient();
 
-    // Fetch all customers (including soft-deleted for full backup)
-    const { data: customers, error: fetchError } = await supabase
-      .from("customers")
-      .select("*")
-      .order("created_at", { ascending: false });
+    // Fetch all customers (including soft-deleted for full backup, paginated to bypass 1000 max rows limit)
+    let customers: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
 
-    if (fetchError) {
-      return NextResponse.json(
-        { success: false, error: fetchError.message },
-        { status: 500 }
-      );
+    while (hasMore) {
+      const { data, error: fetchError } = await supabase
+        .from("customers")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      if (fetchError) {
+        return NextResponse.json(
+          { success: false, error: fetchError.message },
+          { status: 500 }
+        );
+      }
+
+      if (data && data.length > 0) {
+        customers = [...customers, ...data];
+        if (data.length < pageSize) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      } else {
+        hasMore = false;
+      }
     }
 
     if (!customers || customers.length === 0) {
